@@ -235,7 +235,10 @@ class TrainLoraTask(Task):
 
     def prepare(self) -> bool:
 
-        to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id + "/1"
+        to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id
+        common.mkdir_p(to_path)
+
+        to_path = to_path + "/1"
         out_path = config.TRAIN_TMP_OUT_ROOT + "/" + self.task_id
 
         common.mkdir_p(out_path)
