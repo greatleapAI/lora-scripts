@@ -46,7 +46,8 @@ default_args = {
     "conv_dim": 4,     # conv dim | 类似于 network_dim，推荐为 4
     "conv_alpha": 4,  # conv alpha | 类似于 network_alpha，可以采用与 conv_dim 一致或者更小的值
     # dropout | dropout 概率, 0 为不使用 dropout, 越大则 dropout 越多，推荐 0~0.5， LoHa/LoKr/(IA)^3暂时不支持
-    "dropout": "0"
+    "dropout": "0",
+    "output_name": "test"
 
 }
 
@@ -234,8 +235,13 @@ class TrainLoraTask(Task):
     def prepare(self) -> bool:
 
         to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id
+        out_path = config.TRAIN_TMP_OUT_ROOT + "/" + self.task_id
 
+        common.mkdir_p(out_path)
         common.mkdir_p(to_path)
+
+        self.train_data_output = out_path
+        self.train_logs_dir = out_path
 
         oss_root = self.task_info.get("data_root", "")
         auth = oss2.Auth("LTAI5tQnLUQgZSY9xy7rz2fL",

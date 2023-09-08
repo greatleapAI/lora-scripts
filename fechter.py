@@ -53,7 +53,6 @@ def fetch_one_task(done=None) -> TrainLoraTask:
 
     task_info = rsp_data.get("task_info", {})
     task_meta = rsp_data.get("task_meta", {})
-    print(task_info)
     return TrainLoraTask(task_id, task_meta, task_info, done)
 
 
