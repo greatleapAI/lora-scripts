@@ -185,6 +185,7 @@ class TrainLoraTask(Task):
 
         self.append_launch()
         self.append_args("--num_cpu_threads_per_process=8")
+        self.append_args("--num_processes=1")
         self.append_args('''\"./sd-scripts/train_network.py\"''')
         self.append_args("--enable_bucket")
         self.append_raw_kv("train_data_dir", self.train_data_dir)
@@ -234,7 +235,7 @@ class TrainLoraTask(Task):
 
     def prepare(self) -> bool:
 
-        to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id
+        to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id + "/1"
         out_path = config.TRAIN_TMP_OUT_ROOT + "/" + self.task_id
 
         common.mkdir_p(out_path)
