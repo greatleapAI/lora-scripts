@@ -191,7 +191,7 @@ class TrainLoraTask(Task):
 
         #
         model_info = self.params.get("model_info", {})
-        self.params["model_path"] = "/data/shared/models/" + \
+        self.params["model_path"] = "/data/shared/models/Stable-diffusion/" + \
             model_info.get("path", "")
 
         self.append_launch()
