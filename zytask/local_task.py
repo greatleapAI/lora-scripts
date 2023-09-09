@@ -1,9 +1,9 @@
 # coding: utf-8
-import config
+from .config import TRAIN_TMP_OUT_ROOT, TRAIN_TMP_PATH_ROOT
 import oss2
 import json
-import common
-from log import get_logger
+from .common import mkdir_p
+from .log import get_logger
 import os
 
 
@@ -51,12 +51,21 @@ default_args = {
 
 }
 
+auth = oss2.Auth("LTAI5tQnLUQgZSY9xy7rz2fL",
+                 "eIVPKw6R7eSv2Mt2EJ6ZJJ9Rh3HKqJ")
+bucket: oss2.Bucket = oss2.Bucket(
+    auth, 'oss-cn-hangzhou.aliyuncs.com/', 'zy-pic-items-test')
+
+
+model_store_path = "trained_lora"
+
 
 class Task(object):
 
     def __init__(self, task_id, done=None) -> None:
         self.task_id = task_id
         self.done = done
+        self.result = {}
 
     def prepare(self) -> bool:
         return True
@@ -64,10 +73,7 @@ class Task(object):
     def run(self) -> bool:
         pass
 
-    def success_report(self) -> bool:
-        pass
-
-    def fail_report(self) -> bool:
+    def push_result(self) -> bool:
         pass
 
     def finish(self):
@@ -80,17 +86,22 @@ class Task(object):
     def __str__(self) -> str:
         return "task_id{}".format(self.task_id)
 
+    def get_result(self):
+        return self.result
+
 
 class TrainLoraTask(Task):
     def __init__(self, task_id, task_meta, task_info, done=None) -> None:
         self.task_id = task_id
         self.task_info = task_info
-        self.params = json.loads(task_info.get("params", '{}'))
+        self.params = task_info.get("params", '{}')
         self.task_meta = task_meta
         self.local_sh = "python -m accelerate.commands.launch"
         self.train_data_dir = ""
         self.train_data_output = ""
         self.train_logs_dir = ""
+        self.train_result_path = ""
+        self.output_name = ""
 
         super().__init__(task_id, done)
 
@@ -234,25 +245,26 @@ class TrainLoraTask(Task):
         self.append_extra()
 
     def prepare(self) -> bool:
-
-        to_path = config.TRAIN_TMP_PATH_ROOT + "/" + self.task_id
+        logger = get_logger()
+        to_path = TRAIN_TMP_PATH_ROOT + "/" + self.task_id
         self.train_data_dir = to_path
-        common.mkdir_p(to_path)
+        mkdir_p(to_path)
 
         to_path = to_path + "/1"
-        out_path = config.TRAIN_TMP_OUT_ROOT + "/" + self.task_id
+        out_path = TRAIN_TMP_OUT_ROOT + "/" + self.task_id
 
-        common.mkdir_p(out_path)
-        common.mkdir_p(to_path)
+        mkdir_p(out_path)
+        mkdir_p(to_path)
+        self.output_name = self.get_param(
+            "output_name", "") + "." + self.get_param("save_model_as", "")
+
+        self.train_result_path = out_path + "." + \
+            self.get_param("save_model_as", "")
 
         self.train_data_output = out_path
         self.train_logs_dir = out_path
 
         oss_root = self.task_info.get("data_root", "")
-        auth = oss2.Auth("LTAI5tQnLUQgZSY9xy7rz2fL",
-                         "eIVPKw6R7eSv2Mt2EJ6ZJJ9Rh3HKqJ")
-        bucket: oss2.Bucket = oss2.Bucket(
-            auth, 'oss-cn-hangzhou.aliyuncs.com/', 'zy-pic-items-test')
 
         files: map = self.task_info["files"]
 
@@ -264,7 +276,8 @@ class TrainLoraTask(Task):
 
             bucket.get_object_to_file(
                 file_path, local_path)
-            print(f"Downloaded {file_path}->{local_path}")
+
+            logger.info(f"Downloaded {file_path}->{local_path}")
 
             with open(local_text_path, "w") as f:
                 f.write(file_info["tags_en"])
@@ -277,10 +290,31 @@ class TrainLoraTask(Task):
 
     def run(self) -> bool:
         get_logger().info(self.local_sh)
-        os.system(self.local_sh)
+        ret = os.popen(self.local_sh)
+        if not os.path.isfile(self.train_result_path):
+            self.result = {
+                "exec_stdout": "No File Generated, check train logs",
+            }
+            return False
 
         return True
 
+    def push_result(self) -> bool:
+        oss_path = model_store_path + "/" + self.task_id + "/" + self.output_name
 
-class GetTagTask(Task):
-    pass
+        res = bucket.put_object_from_file(
+            oss_path, self.train_result_path)
+        if res.status != 200:
+            self.result = {
+                "local": self.train_result_path,
+                "push_code": res.status,
+                "push_res": res.resp.text,
+            }
+            return False
+
+        self.result = {
+            "local": self.train_result_path,
+            "oss": oss_path,
+        }
+
+        return True

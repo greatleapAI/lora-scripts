@@ -3,9 +3,10 @@ import queue
 import threading
 import time
 import requests
-from local_task import TrainLoraTask
-from log import get_logger
+from .local_task import TrainLoraTask
+from .log import get_logger
 import traceback
+from .urls_manager import get_lora_client
 mutex = threading.Lock()
 
 next = True
@@ -36,19 +37,16 @@ class TaskFetcher(object):
 
 
 def fetch_one_task(done=None) -> TrainLoraTask:
-    url = "https://test-zy.greatleapai.com//train/gettrain"
-    headers = {
-        "--ImFromYanCheng---": "x13413413jljkljalf13343jlkajdfkla",
-        "Content-Type": "application/json"
-    }
-    rsp = requests.post(url, headers=headers, json={
-        "name": "fechter_1"
-    })
-
-    rsp_data = rsp.json().get("data")
+    logger = get_logger()
+    succ, rsp_data = get_lora_client().fetch()
+    if not succ:
+        logger.info("fetch task failed")
+        return None
+    logger.info(f"get task:{rsp_data}")
 
     task_id = rsp_data.get("task_id", "")
     if len(task_id) == 0 or task_id == "0":
+
         return None
 
     task_info = rsp_data.get("task_info", {})
@@ -66,18 +64,17 @@ def fetch_train_task(q: queue.Queue):
     task_id = 0
     while True:
         while get_next() == False:
-            logger.info(f"Wating Executing.....{task_id}\n")
+            logger.debug(f"Wating Executing.....{task_id}\n")
             time.sleep(1)
 
         def done():
             global next
-
             set_next(True)
             logger.info(f"Task finished:{task_id}\n")
 
         try:
             task = fetch_one_task(done)
-            if task == None:
+            if task == None or task.task_id == 0:
                 time.sleep(1)
                 continue
 
@@ -90,7 +87,7 @@ def fetch_train_task(q: queue.Queue):
                 traceback.format_exc()))
             continue
 
-        logger.info("Sending Task To Queue:{task_id}")
+        logger.info(f"Sending Task To Queue:{task_id}")
 
 
 class TrainTaskFecher(TaskFetcher):

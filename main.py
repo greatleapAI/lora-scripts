@@ -1,7 +1,8 @@
 # coding: utf-8
-from scheduler import TaskRunner
-from fechter import TrainTaskFecher
-from log import get_logger
+from zytask.log import get_logger
+from zytask.fechter import TrainTaskFecher
+from zytask.scheduler import TaskRunner
+
 
 if __name__ == "__main__":
     fetchers = []
