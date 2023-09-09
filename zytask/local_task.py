@@ -138,7 +138,7 @@ class TrainLoraTask(Task):
 
         model_info = self.params.get("model_info", {})
         v2 = model_info.get("v2", None)
-        if v2 == None:
+        if not v2:
             self.append_by_key("clip_skip")
         else:
             self.append_args("--v2")
