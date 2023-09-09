@@ -258,8 +258,7 @@ class TrainLoraTask(Task):
         self.output_name = self.get_param(
             "output_name", "") + "." + self.get_param("save_model_as", "")
 
-        self.train_result_path = out_path + "/" + self.output_name + "." + \
-            self.get_param("save_model_as", "")
+        self.train_result_path = out_path + "/" + self.output_name
 
         self.train_data_output = out_path
         self.train_logs_dir = out_path
