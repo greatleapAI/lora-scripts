@@ -258,7 +258,7 @@ class TrainLoraTask(Task):
         self.output_name = self.get_param(
             "output_name", "") + "." + self.get_param("save_model_as", "")
 
-        self.train_result_path = out_path + "." + \
+        self.train_result_path = out_path + "/" + self.output_name + "." + \
             self.get_param("save_model_as", "")
 
         self.train_data_output = out_path
@@ -290,11 +290,12 @@ class TrainLoraTask(Task):
 
     def run(self) -> bool:
         get_logger().info(self.local_sh)
-        ret = os.popen(self.local_sh)
+        ret = os.system(self.local_sh)
         if not os.path.isfile(self.train_result_path):
             self.result = {
                 "exec_stdout": "No File Generated, check train logs",
             }
+            get_logger().info(f"File: {self.train_result_path} not found!")
             return False
 
         return True
