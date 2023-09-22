@@ -249,8 +249,9 @@ class TrainLoraTask(Task):
         to_path = TRAIN_TMP_PATH_ROOT + "/" + self.task_id
         self.train_data_dir = to_path
         mkdir_p(to_path)
+        train_times = self.get_param("single_image_train_times", 10)
 
-        to_path = to_path + "/1"
+        to_path = to_path + f"/{train_times}"
         out_path = TRAIN_TMP_OUT_ROOT + "/" + self.task_id
 
         mkdir_p(out_path)
