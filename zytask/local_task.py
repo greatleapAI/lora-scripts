@@ -1,9 +1,10 @@
 # coding: utf-8
-from .config import TRAIN_TMP_OUT_ROOT, TRAIN_TMP_PATH_ROOT
+from .config import TRAIN_TMP_OUT_ROOT, TRAIN_TMP_PATH_ROOT, SD_MODEL_PATH
 import oss2
 import json
 from .common import mkdir_p
 from .log import get_logger
+import shutil
 import os
 
 
@@ -102,6 +103,8 @@ class TrainLoraTask(Task):
         self.train_logs_dir = ""
         self.train_result_path = ""
         self.output_name = ""
+        self.sd_model_path = ""
+        self.user_info = task_meta.get("user_info", {})
 
         super().__init__(task_id, done)
 
@@ -256,10 +259,16 @@ class TrainLoraTask(Task):
 
         mkdir_p(out_path)
         mkdir_p(to_path)
-        self.output_name = self.get_param(
-            "output_name", "") + "." + self.get_param("save_model_as", "")
+
+        outname = self.get_param(
+            "output_name", "")
+        user_name = self.user_info.get("name", "unknown")
+        save_as = self.get_param("save_model_as", "")
+        self.output_name = outname + "." + save_as
 
         self.train_result_path = out_path + "/" + self.output_name
+        self.sd_model_path = SD_MODEL_PATH + "/" + \
+            outname + "_" + user_name + "." + save_as
 
         self.train_data_output = out_path
         self.train_logs_dir = out_path
@@ -315,7 +324,10 @@ class TrainLoraTask(Task):
 
         self.result = {
             "local": self.train_result_path,
+            "sd": self.sd_model_path,
             "oss": oss_path,
         }
+
+        shutil.copyfile(self.train_result_path, self.sd_model_path)
 
         return True

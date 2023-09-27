@@ -3,6 +3,8 @@
 TRAIN_TMP_PATH_ROOT = "/tmp/train"
 TRAIN_TMP_OUT_ROOT = "/tmp/output"
 
+SD_MODEL_PATH = "/data/shared/models/Lora/zytrain/"
+
 
 ZY_BACK_URL = "https://test-zy.greatleapai.com"
 
