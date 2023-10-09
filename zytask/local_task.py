@@ -262,7 +262,7 @@ class TrainLoraTask(Task):
 
         outname = self.get_param(
             "output_name", "")
-        user_name = self.user_info.get("name", "unknown")
+        user_name = self.user_info.get("username", "unknown")
         save_as = self.get_param("save_model_as", "")
         self.output_name = outname + "." + save_as
 
