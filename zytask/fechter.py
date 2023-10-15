@@ -90,14 +90,27 @@ def fetch_train_task(q: queue.Queue):
         logger.info(f"Sending Task To Queue:{task_id}")
 
 
+def fetch_download_task(q: queue.Queue):
+    pass
+
+
 class TrainTaskFecher(TaskFetcher):
 
     def __init__(self) -> None:
         super().__init__()
 
-    def run(self, q: queue.Queue()):
+    def run(self, q: queue.Queue):
         print("TrainTaskFecher")
         t = threading.Thread(target=fetch_train_task, args=(q,))
+        t.daemon = True
+        t.start()
+        return t
+
+
+class SyncModelFecher(TaskFetcher):
+    def run(self, q: queue.Queue):
+        print("DownLoadFecher")
+        t = threading.Thread(target=fetch_download_task, args=(q,))
         t.daemon = True
         t.start()
         return t
